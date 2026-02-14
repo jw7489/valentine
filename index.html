@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Will you be my Valentine?</title>
+  <style>
+    :root {
+      --bg1: #ff5f9e;
+      --bg2: #ffd1e6;
+      --card: rgba(255, 255, 255, 0.85);
+      --text: #2b2b2b;
+      --yes: #22c55e;
+      --no: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(circle at 20% 20%, var(--bg2), transparent 45%),
+                  radial-gradient(circle at 80% 30%, #ffe5f1, transparent 55%),
+                  linear-gradient(135deg, var(--bg1), #ff84b7 35%, #ffc1da 100%);
+      display: grid;
+      place-items: center;
+      color: var(--text);
+      user-select: none;
+    }
+
+    .card {
+      width: min(720px, calc(100% - 32px));
+      padding: 28px 24px 24px;
+      border-radius: 22px;
+      background: var(--card);
+      box-shadow: 0 18px 60px rgba(0,0,0,0.18);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.6);
+      position: relative;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin: 0 0 18px;
+      font-size: clamp(14px, 2vw, 18px);
+      opacity: 0.85;
+    }
+
+    .btn-row {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+      will-change: transform;
+    }
+
+    button:active { transform: scale(0.98); }
+
+    #yesBtn {
+      background: linear-gradient(180deg, #34d399, var(--yes));
+      color: white;
+    }
+    #yesBtn:hover { filter: brightness(1.03); }
+
+    /* "No" button will be positioned absolutely within the card-area overlay */
+    #noBtn {
+      background: linear-gradient(180deg, #fb7185, var(--no));
+      color: white;
+      position: fixed; /* moves anywhere on screen */
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 50;
+      touch-action: none;
+    }
+
+    .result {
+      display: none;
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(0,0,0,0.06);
+      font-weight: 700;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    /* Floating hearts */
+    .heart {
+      position: fixed;
+      left: 0;
+      top: 0;
+      pointer-events: none;
+      font-size: 18px;
+      animation: floatUp 1.8s ease-out forwards;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.2));
+      opacity: 0.9;
+    }
+
+    @keyframes floatUp {
+      0%   { transform: translate(-50%, -50%) scale(0.9); opacity: 0; }
+      10%  { opacity: 0.95; }
+      100% { transform: translate(-50%, -140px) scale(1.35); opacity: 0; }
+    }
+
+    /* Confetti-ish sparkle */
+    .sparkle {
+      position: fixed;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: pop 900ms ease-out forwards;
+      opacity: 0.95;
+    }
+
+    @keyframes pop {
+      0% { transform: translate(-50%,-50%) scale(0.6); opacity: 0; }
+      20% { opacity: 1; }
+      100% { transform: translate(-50%,-50%) translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card" id="card">
+    <h1>Ana my love, Will you be my Valentine? 💘</h1>
+    <p>Choose wisely… the universe is watching 😌</p>
+
+    <div class="btn-row">
+      <button id="yesBtn">Yes 💞</button>
+      <!-- "No" is positioned separately (fixed), but we keep a placeholder space here -->
+      <span style="width: 0; height: 0;"></span>
+    </div>
+
+    <div class="result" id="result">
+      Yayyyy!! 💖💖💖 <br />
+      <span style="font-weight:600; opacity:0.85;">Best decision ever 😄</span>
+    </div>
+
+    <div class="hint">You're mine already 😉</div>
+  </div>
+
+  <button id="noBtn" aria-label="No">No 🙅‍♂️</button>
+
+  <audio id="bgMusic" loop>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+  <script>
+    const music = document.getElementById("bgMusic");
+
+// play music on first interaction (works on all browsers)
+function startMusic() {
+  music.volume = 0.6;
+  music.play().catch(()=>{});
+  document.removeEventListener("click", startMusic);
+  document.removeEventListener("touchstart", startMusic);
+}
+
+document.addEventListener("click", startMusic);
+document.addEventListener("touchstart", startMusic);
+
+    const yesBtn = document.getElementById("yesBtn");
+    const noBtn  = document.getElementById("noBtn");
+    const result = document.getElementById("result");
+
+    // --- Config ---
+    const SAFE_MARGIN = 16;          // keep button away from edges
+    const DODGE_RADIUS = 120;        // how close cursor can get before dodging
+    const BIG_DODGE_RADIUS = 170;    // extra dodge for fast approaches
+    const MOVE_STEP_MIN = 140;       // distance to jump
+    const MOVE_STEP_MAX = 260;
+    const MOBILE_TOUCH_DODGE = true; // dodge on touchmove too
+
+    // Place "No" initially near the card but not overlapping "Yes"
+    function placeNoInitial() {
+      const cardRect = document.getElementById("card").getBoundingClientRect();
+      const x = cardRect.left + cardRect.width * 0.62;
+      const y = cardRect.top + cardRect.height * 0.66;
+      setNoPos(clamp(x, SAFE_MARGIN, innerWidth - SAFE_MARGIN),
+               clamp(y, SAFE_MARGIN, innerHeight - SAFE_MARGIN));
+    }
+
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+    // Store current position
+    let noX = innerWidth / 2;
+    let noY = innerHeight / 2;
+
+    function setNoPos(x, y) {
+      noX = x; noY = y;
+      noBtn.style.left = `${x}px`;
+      noBtn.style.top  = `${y}px`;
+    }
+
+    function rand(min, max) { return Math.random() * (max - min) + min; }
+
+    function distance(ax, ay, bx, by) {
+      const dx = ax - bx, dy = ay - by;
+      return Math.hypot(dx, dy);
+    }
+
+    // Move "No" away from pointer
+    function dodge(pointerX, pointerY) {
+      const rect = noBtn.getBoundingClientRect();
+      const btnCx = rect.left + rect.width / 2;
+      const btnCy = rect.top  + rect.height / 2;
+
+      // vector from pointer -> button (we want to move further in that direction)
+      let vx = btnCx - pointerX;
+      let vy = btnCy - pointerY;
+
+      // If pointer is exactly on center, random direction
+      const len = Math.hypot(vx, vy) || 1;
+      vx /= len; vy /= len;
+
+      // Jump distance
+      const jump = rand(MOVE_STEP_MIN, MOVE_STEP_MAX);
+
+      // Candidate new position (button center)
+      let nx = btnCx + vx * jump + rand(-40, 40);
+      let ny = btnCy + vy * jump + rand(-40, 40);
+
+      // Clamp to screen while accounting for button size
+      const w = rect.width, h = rect.height;
+      nx = clamp(nx, SAFE_MARGIN + w / 2, innerWidth  - SAFE_MARGIN - w / 2);
+      ny = clamp(ny, SAFE_MARGIN + h / 2, innerHeight - SAFE_MARGIN - h / 2);
+
+      setNoPos(nx, ny);
+    }
+
+    // Also dodge if cursor comes near
+    function onPointerMove(e) {
+      const px = e.clientX;
+      const py = e.clientY;
+
+      const rect = noBtn.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top  + rect.height / 2;
+
+      const d = distance(px, py, cx, cy);
+
+      // Dodge thresholds
+      if (d < DODGE_RADIUS) dodge(px, py);
+
+      // Extra dodge when very close
+      if (d < BIG_DODGE_RADIUS && e.movementX * e.movementX + e.movementY * e.movementY > 25) {
+        dodge(px, py);
+      }
+    }
+
+    // Prevent accidental click / "No" selection
+    noBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Teleport away if clicked somehow
+      dodge(Math.random() * innerWidth, Math.random() * innerHeight);
+    });
+
+    // Make "Yes" win
+    yesBtn.addEventListener("click", (e) => {
+      result.style.display = "block";
+      popHearts(innerWidth / 2, innerHeight / 2);
+      popSparkles(innerWidth / 2, innerHeight / 2);
+      noBtn.style.display = "none";
+      yesBtn.textContent = "Yes 💖 (Locked in!)";
+    });
+
+    // Cute effects
+    function popHearts(x, y) {
+      const hearts = ["💖","💘","💝","💗","💕","💞"];
+      for (let i = 0; i < 14; i++) {
+        const el = document.createElement("div");
+        el.className = "heart";
+        el.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+        const ox = rand(-180, 180);
+        const oy = rand(-30, 40);
+        el.style.left = `${x + ox}px`;
+        el.style.top  = `${y + oy}px`;
+        el.style.animationDelay = `${rand(0, 0.25)}s`;
+        el.style.fontSize = `${rand(16, 28)}px`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 2200);
+      }
+    }
+
+    function popSparkles(x, y) {
+      for (let i = 0; i < 26; i++) {
+        const s = document.createElement("div");
+        s.className = "sparkle";
+        s.style.left = `${x}px`;
+        s.style.top  = `${y}px`;
+        s.style.background = `hsl(${Math.floor(rand(0, 360))} 90% 70%)`;
+        s.style.setProperty("--dx", `${rand(-180, 180)}px`);
+        s.style.setProperty("--dy", `${rand(-140, 140)}px`);
+        document.body.appendChild(s);
+        setTimeout(() => s.remove(), 1000);
+      }
+    }
+
+    // Mouse / pointer movement
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+
+    // Mobile support: dodge on touch move
+    if (MOBILE_TOUCH_DODGE) {
+      window.addEventListener("touchmove", (e) => {
+        const t = e.touches && e.touches[0];
+        if (!t) return;
+        onPointerMove({ clientX: t.clientX, clientY: t.clientY, movementX: 10, movementY: 10 });
+      }, { passive: true });
+    }
+
+    // Keep button inside on resize
+    window.addEventListener("resize", () => {
+      const rect = noBtn.getBoundingClientRect();
+      const w = rect.width, h = rect.height;
+      setNoPos(
+        clamp(noX, SAFE_MARGIN + w/2, innerWidth - SAFE_MARGIN - w/2),
+        clamp(noY, SAFE_MARGIN + h/2, innerHeight - SAFE_MARGIN - h/2)
+      );
+    });
+
+    // Init
+    placeNoInitial();
+  </script>
+</body>
+</html>
